@@ -110,11 +110,52 @@
                         {{break}}
                     {{ end }}
                 {{ end }}
+                
+                {{/* find external host saved on a label like traefik-home.external-service.<name>.url*/}}
+                {{/* since <name> is unknown, we must cycle throught all labels */}}
+                {{ $ext_service_name := "" }}
+                {{ $ext_service_names := list }}
+                {{ range $k := keys $container.Labels}}
+                    {{ if (regexMatch "traefik-home\\.external-service\\.(.)+\\.url" $k) }}
+                        {{/* I couldn't find a function that finds a group in a regex, so I just remove text before and after the group */}}
+                        {{ $ext_service_name = regexReplaceAll "traefik-home\\.external-service\\." $k "" }}
+                        {{ $ext_service_name = regexReplaceAll "\\.url" $ext_service_name "" }}
+                        {{ $ext_service_names = append $ext_service_names $ext_service_name }}                    
+                    {{ end }}
+                {{ end }}
 
                 {{/* skip container if service_name was not found */}}
                 {{ if eq $service_name "" }}
-                    {{continue}}
+                    {{ if eq $ext_service_name "" }}
+                        {{continue}}
+                    {{ end }}
                 {{ end }}
+
+                {{ range $ext_service := $ext_service_names}}
+                    {{ $ext_service_label := print "traefik-home.external-service." $ext_service }}
+                    {{ $url_label := print $ext_service_label ".url" }}
+                    {{ $icon_label := print $ext_service_label ".icon" }}
+                    {{ $alias_label := print $ext_service_label ".alias" }}
+                    {{ $url := index $container.Labels $url_label }}                                  
+
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6 mt-4 mx-xl-2">
+                        <a class="text-decoration-none text-secondary" href="{{ print $url }}">
+                            <div class="row-cols-1 text-center">
+                                {{/* if icon is set for this docker image then display it, otherwise use a generic icon made up by the first 2 letters */}}
+                                {{ $icon := index $container.Labels $icon_label}}
+                                {{ $name := or (index $container.Labels $alias_label) $container.Name }}                   
+                                {{ if $icon }}
+                                    <div style="background-image: url({{ $icon }})" class="col mb-3 icon"></div>
+                                {{ else }}
+                                    <div data-name='{{ substr 0 2 $name }}' class="col mb-3"></div>
+                                {{ end }}
+                                <span class="col text-capitalize">
+                                    {{ $name }}
+                                </span>
+                            </div>
+                        </a>
+                    </div>
+
 
                 {{ $host_label := print "traefik.http.routers." $service_name ".rule" }}
                 {{ $host := index $container.Labels $host_label }}
