@@ -143,7 +143,7 @@
                             <div class="row-cols-1 text-center">
                                 {{/* if icon is set for this docker image then display it, otherwise use a generic icon made up by the first 2 letters */}}
                                 {{ $icon := index $container.Labels $icon_label}}
-                                {{ $name := or (index $container.Labels $alias_label) $container.Name }}                   
+                                {{ $name := or (index $container.Labels $alias_label) $ext_service }}                   
                                 {{ if $icon }}
                                     <div style="background-image: url({{ $icon }})" class="col mb-3 icon"></div>
                                 {{ else }}
